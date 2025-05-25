@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { EffectConfiguratorComponent } from './effect-engine';
+import { AbilitySelectorComponent } from './ability-engine';
 
 @Component({
   selector: 'app-form-card',
@@ -12,6 +13,7 @@ import { EffectConfiguratorComponent } from './effect-engine';
     FormsModule,
     HttpClientModule,
     EffectConfiguratorComponent,
+    AbilitySelectorComponent,
   ],
   template: `
     <div class="container">
@@ -48,17 +50,23 @@ import { EffectConfiguratorComponent } from './effect-engine';
           name="description"
         ></textarea>
 
-        <label>Abilità (virgola separate)</label>
+        <!-- <label>Abilità (virgola separate)</label>
         <input
           [value]="(formData.abilities || []).join(', ')"
           (input)="handleAbilitiesChange($event)"
+        /> -->
+        @if(loadingEdit){
+        <label>Abilità</label>
+        <app-ability-selector
+          [abilities]="formData.abilities"
+          (abilitiesChange)="formData.abilities = $event"
         />
-
         <label>Effetto</label>
         <app-effect-configurator
           [effect]="formData.effect"
           (onChange)="updateEffectJson($event)"
         />
+        }
 
         <button type="submit" [disabled]="loading">Salva Carta</button>
       </form>
@@ -127,12 +135,12 @@ export class FormCardComponent implements OnInit {
     cost: 0,
     image: '',
     description: '',
-    abilities: [],
+    abilities: [] as string[],
     effect: {},
   };
   effectPreview = '{}';
   loading = false;
-
+  abilities: string[] = [];
   constructor(private http: HttpClient) {}
 
   ngOnInit() {
@@ -145,10 +153,21 @@ export class FormCardComponent implements OnInit {
       error: () => alert('Errore nel caricamento carte'),
     });
   }
-
+  loadingEdit = true;
   editCard(card: any) {
-    this.formData = { ...card };
-    this.effectPreview = JSON.stringify(card.effect || {}, null, 2);
+    this.loadingEdit = false;
+
+    this.formData = {
+      ...card,
+      effect: card.effect || {}, // usa direttamente effect singolo
+      abilities: card.abilities || [], // corregge anche le abilità
+    };
+    console.log(this.formData);
+    this.effectPreview = JSON.stringify(this.formData.effect, null, 2);
+
+    setTimeout(() => {
+      this.loadingEdit = true;
+    }, 200);
   }
 
   updateEffectJson(updatedEffect: any) {
@@ -165,6 +184,10 @@ export class FormCardComponent implements OnInit {
   }
 
   handleSubmit() {
+    if (!this.formData.abilities) {
+      this.formData.abilities = [];
+    }
+
     const payload = {
       ...this.formData,
       attack: Number(this.formData.attack),

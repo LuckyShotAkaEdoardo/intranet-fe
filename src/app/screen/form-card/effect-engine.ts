@@ -169,6 +169,7 @@ export class EffectConfiguratorComponent implements OnInit {
 
   ngOnInit() {
     this.localEffect = { ...this.effect };
+    console.log(this.effect);
     this.onChange.emit(this.localEffect);
   }
 
