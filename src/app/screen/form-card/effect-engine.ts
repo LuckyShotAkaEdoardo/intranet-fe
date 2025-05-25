@@ -34,44 +34,52 @@ import { EFFECT_METADATA } from './model';
       <ng-container *ngIf="selectedMeta">
         <div *ngFor="let field of selectedMeta.fields">
           <label>{{ field }}</label>
-          <input
-            type="text"
-            [value]="resolveFieldValue(field)"
-            (input)="updateNestedFieldFromEvent(field, $event)"
-          />
+
+          <ng-container [ngSwitch]="field">
+            <!-- Campo target: UI personalizzata -->
+            <ng-container *ngSwitchCase="'target'">
+              <select [(ngModel)]="targetType">
+                <option value="PREDEFINED">Predefinito</option>
+                <option value="LIST">Lista ID</option>
+                <option value="CONDITION">Condizione</option>
+                <option value="ALL">Tutti</option>
+              </select>
+
+              <ng-container [ngSwitch]="targetType">
+                <select
+                  *ngSwitchCase="'PREDEFINED'"
+                  [(ngModel)]="localEffect.target"
+                  (change)="onChange.emit(localEffect)"
+                >
+                  <option *ngFor="let key of targetKeys" [value]="key">
+                    {{ key }}
+                  </option>
+                </select>
+
+                <input
+                  *ngSwitchCase="'LIST'"
+                  placeholder="c1, c2, c3"
+                  (input)="handleTargetChangeFromEvent('LIST', $event)"
+                />
+
+                <input
+                  *ngSwitchCase="'CONDITION'"
+                  placeholder="LOWEST_HP / CUSTOM"
+                  (input)="handleTargetChangeFromEvent('CONDITION', $event)"
+                />
+              </ng-container>
+            </ng-container>
+
+            <!-- Altri campi -->
+            <ng-container *ngSwitchDefault>
+              <input
+                type="text"
+                [value]="resolveFieldValue(field)"
+                (input)="updateNestedFieldFromEvent(field, $event)"
+              />
+            </ng-container>
+          </ng-container>
         </div>
-      </ng-container>
-
-      <label>Tipo Target</label>
-      <select [(ngModel)]="targetType">
-        <option value="PREDEFINED">Predefinito</option>
-        <option value="LIST">Lista ID</option>
-        <option value="CONDITION">Condizione</option>
-        <option value="ALL">Tutti</option>
-      </select>
-
-      <ng-container [ngSwitch]="targetType">
-        <select
-          *ngSwitchCase="'PREDEFINED'"
-          [(ngModel)]="localEffect.target"
-          (change)="onChange.emit(localEffect)"
-        >
-          <option *ngFor="let key of targetKeys" [value]="key">
-            {{ key }}
-          </option>
-        </select>
-
-        <input
-          *ngSwitchCase="'LIST'"
-          placeholder="c1, c2, c3"
-          (input)="handleTargetChangeFromEvent('LIST', $event)"
-        />
-
-        <input
-          *ngSwitchCase="'CONDITION'"
-          placeholder="LOWEST_HP / CUSTOM"
-          (input)="handleTargetChangeFromEvent('CONDITION', $event)"
-        />
       </ng-container>
 
       <h5>Anteprima JSON</h5>
@@ -115,6 +123,7 @@ export class EffectConfiguratorComponent implements OnInit {
   targetType = 'PREDEFINED';
 
   effectMetadata = EFFECT_METADATA;
+
   readonly triggerOptions = [
     'ON_PLAY',
     'ON_END_TURN',

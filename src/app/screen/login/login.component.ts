@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
-import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 
 @Component({
@@ -10,43 +10,68 @@ import { HttpClient, HttpClientModule } from '@angular/common/http';
   imports: [CommonModule, FormsModule, HttpClientModule],
   template: `
     <div class="login-container">
-      <h1>Login</h1>
+      <h2>Login</h2>
 
       <input
         type="text"
         placeholder="Username"
         [(ngModel)]="username"
-        class="input"
+        [disabled]="loading"
       />
       <input
         type="password"
         placeholder="Password"
         [(ngModel)]="password"
-        class="input"
+        [disabled]="loading"
       />
 
-      <button (click)="login()">Login</button>
+      <button (click)="login()" [disabled]="loading">
+        {{ loading ? 'Login in corso...' : 'Entra' }}
+      </button>
+
+      <div *ngIf="loading" class="spinner"></div>
     </div>
   `,
   styles: [
     `
       .login-container {
         max-width: 400px;
-        margin: 0 auto;
+        margin: auto;
         padding: 2rem;
         text-align: center;
-        background: #fff;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       }
 
-      .input {
+      input {
+        display: block;
         width: 100%;
-        padding: 12px;
-        margin-bottom: 20px;
-        border-radius: 6px;
+        margin: 0.5rem 0;
+        padding: 0.75rem;
         border: 1px solid #ccc;
-        box-sizing: border-box;
+        border-radius: 6px;
+      }
+
+      button {
+        margin-top: 1rem;
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+      }
+
+      .spinner {
+        margin-top: 1rem;
+        width: 24px;
+        height: 24px;
+        border: 3px solid #ccc;
+        border-top: 3px solid #333;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
       }
     `,
   ],
@@ -54,31 +79,33 @@ import { HttpClient, HttpClientModule } from '@angular/common/http';
 export class LoginComponent {
   username = '';
   password = '';
+  loading = false;
 
   constructor(private http: HttpClient, private router: Router) {}
 
   login() {
+    if (!this.username || !this.password) {
+      alert('Inserisci username e password');
+      return;
+    }
+
+    this.loading = true;
+
     this.http
-      .post<any>('https://intranet-be.onrender.com/auth/login', {
+      .post('https://intranet-be.onrender.com/auth/login', {
         username: this.username,
         password: this.password,
       })
       .subscribe({
-        next: (data) => {
-          if (data.forceChange) {
-            alert('Login riuscito, devi cambiare la password');
-            this.router.navigate(['/home'], {
-              queryParams: { forceChange: true, username: this.username },
-            });
-          } else {
-            alert('Login completato con successo');
-            this.router.navigate(['/home'], {
-              queryParams: { forceChange: false, username: this.username },
-            });
-          }
+        next: (response: any) => {
+          localStorage.setItem('user', JSON.stringify(response));
+          this.router.navigate(['/home']);
         },
-        error: (err) => {
-          alert('Errore: ' + (err.error?.error || 'Credenziali non valide'));
+        error: () => {
+          alert('Credenziali non valide');
+        },
+        complete: () => {
+          this.loading = false;
         },
       });
   }
