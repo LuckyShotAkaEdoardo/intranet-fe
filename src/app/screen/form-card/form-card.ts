@@ -25,6 +25,12 @@ import { AbilitySelectorComponent } from './ability-engine';
 
         <label>Nome</label>
         <input [(ngModel)]="formData.name" name="name" />
+        <label> Visibile </label>
+        <input
+          type="checkbox"
+          [(ngModel)]="formData.isVisibile"
+          name="isVisibile"
+        />
 
         <label>Tipo</label>
         <select [(ngModel)]="formData.type" name="type">
@@ -129,6 +135,7 @@ export class FormCardComponent implements OnInit {
   formData: any = {
     id: '',
     name: '',
+    isVisibile: false,
     type: 'HERO',
     attack: 0,
     defense: 0,
