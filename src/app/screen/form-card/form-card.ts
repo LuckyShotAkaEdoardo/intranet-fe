@@ -18,6 +18,15 @@ import { AbilitySelectorComponent } from './ability-engine';
   template: `
     <div class="container">
       <h2>Gestione Carte</h2>
+      @if( formData.image){
+      <img
+        style="width: 10%;"
+        [src]="
+          'https://rrcamyzbvljicmaaqwap.supabase.co/storage/v1/object/public/sw4img/card-img/all-card/' +
+          formData.image
+        "
+      /><img />
+      }
 
       <form (ngSubmit)="handleSubmit()" *ngIf="formData">
         <label>ID</label>
