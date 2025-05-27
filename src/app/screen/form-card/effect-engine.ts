@@ -32,54 +32,91 @@ import { EFFECT_METADATA } from './model';
       </select>
 
       <ng-container *ngIf="selectedMeta">
-        <div *ngFor="let field of selectedMeta.fields">
-          <label>{{ field }}</label>
+        <!-- Gestione speciale per SUMMON -->
+        <ng-container *ngIf="localEffect.type === 'SUMMON'; else defaultFields">
+          <label>Modalità evocazione</label>
+          <select [(ngModel)]="localEffect.mode">
+            <option value="random">Casuale per tipo</option>
+            <option value="pool">Da pool</option>
+            <option value="fixed">Carte fisse</option>
+          </select>
 
-          <ng-container [ngSwitch]="field">
-            <!-- Campo target: UI personalizzata -->
-            <ng-container *ngSwitchCase="'target'">
-              <select [(ngModel)]="targetType">
-                <option value="PREDEFINED">Predefinito</option>
-                <option value="LIST">Lista ID</option>
-                <option value="CONDITION">Condizione</option>
-                <option value="ALL">Tutti</option>
-              </select>
+          <div *ngIf="localEffect.mode === 'random'">
+            <label>Tipo (subtype)</label>
+            <input [(ngModel)]="localEffect.subtype" />
 
-              <ng-container [ngSwitch]="targetType">
-                <select
-                  *ngSwitchCase="'PREDEFINED'"
-                  [(ngModel)]="localEffect.target"
-                  (change)="onChange.emit(localEffect)"
-                >
-                  <option *ngFor="let key of targetKeys" [value]="key">
-                    {{ key }}
-                  </option>
+            <label>Numero di evocazioni</label>
+            <input type="number" [(ngModel)]="localEffect.value" min="1" />
+
+            <label>Filtro (JSON)</label>
+            <textarea
+              [(ngModel)]="filterJson"
+              (change)="updateFilterFromJson()"
+            ></textarea>
+          </div>
+
+          <div *ngIf="localEffect.mode === 'pool'">
+            <label>Pool di carte (id separate da virgola)</label>
+            <input [(ngModel)]="poolString" (input)="updatePool()" />
+
+            <label>Numero da evocare</label>
+            <input type="number" [(ngModel)]="localEffect.value" min="1" />
+          </div>
+
+          <div *ngIf="localEffect.mode === 'fixed'">
+            <label>Carte fisse da evocare (id separate da virgola)</label>
+            <input [(ngModel)]="cardIdsString" (input)="updateCardIds()" />
+          </div>
+        </ng-container>
+
+        <ng-template #defaultFields>
+          <div *ngFor="let field of selectedMeta.fields">
+            <label>{{ field }}</label>
+
+            <ng-container [ngSwitch]="field">
+              <ng-container *ngSwitchCase="'target'">
+                <select [(ngModel)]="targetType">
+                  <option value="PREDEFINED">Predefinito</option>
+                  <option value="LIST">Lista ID</option>
+                  <option value="CONDITION">Condizione</option>
+                  <option value="ALL">Tutti</option>
                 </select>
 
-                <input
-                  *ngSwitchCase="'LIST'"
-                  placeholder="c1, c2, c3"
-                  (input)="handleTargetChangeFromEvent('LIST', $event)"
-                />
+                <ng-container [ngSwitch]="targetType">
+                  <select
+                    *ngSwitchCase="'PREDEFINED'"
+                    [(ngModel)]="localEffect.target"
+                    (change)="onChange.emit(localEffect)"
+                  >
+                    <option *ngFor="let key of targetKeys" [value]="key">
+                      {{ key }}
+                    </option>
+                  </select>
 
+                  <input
+                    *ngSwitchCase="'LIST'"
+                    placeholder="c1, c2, c3"
+                    (input)="handleTargetChangeFromEvent('LIST', $event)"
+                  />
+
+                  <input
+                    *ngSwitchCase="'CONDITION'"
+                    placeholder="LOWEST_HP / CUSTOM"
+                    (input)="handleTargetChangeFromEvent('CONDITION', $event)"
+                  />
+                </ng-container>
+              </ng-container>
+
+              <ng-container *ngSwitchDefault>
                 <input
-                  *ngSwitchCase="'CONDITION'"
-                  placeholder="LOWEST_HP / CUSTOM"
-                  (input)="handleTargetChangeFromEvent('CONDITION', $event)"
+                  type="text"
+                  [value]="resolveFieldValue(field)"
+                  (input)="updateNestedFieldFromEvent(field, $event)"
                 />
               </ng-container>
             </ng-container>
-
-            <!-- Altri campi -->
-            <ng-container *ngSwitchDefault>
-              <input
-                type="text"
-                [value]="resolveFieldValue(field)"
-                (input)="updateNestedFieldFromEvent(field, $event)"
-              />
-            </ng-container>
-          </ng-container>
-        </div>
+          </div>
+        </ng-template>
       </ng-container>
 
       <h5>Anteprima JSON</h5>
@@ -101,7 +138,8 @@ import { EFFECT_METADATA } from './model';
       }
 
       input,
-      select {
+      select,
+      textarea {
         width: 100%;
         padding: 6px;
         margin-top: 4px;
@@ -120,8 +158,10 @@ export class EffectConfiguratorComponent implements OnInit {
   @Output('onChange') onChange = new EventEmitter<any>();
 
   localEffect: any = {};
+  poolString = '';
+  cardIdsString = '';
+  filterJson = '';
   targetType = 'PREDEFINED';
-
   effectMetadata = EFFECT_METADATA;
 
   readonly triggerOptions = [
@@ -169,7 +209,12 @@ export class EffectConfiguratorComponent implements OnInit {
 
   ngOnInit() {
     this.localEffect = { ...this.effect };
-    console.log(this.effect);
+    this.localEffect.mode = this.localEffect.mode || 'random';
+    this.poolString = (this.localEffect.pool || []).join(', ');
+    this.cardIdsString = (this.localEffect.cardIds || []).join(', ');
+    this.filterJson = this.localEffect.filter
+      ? JSON.stringify(this.localEffect.filter, null, 2)
+      : '';
     this.onChange.emit(this.localEffect);
   }
 
@@ -219,5 +264,26 @@ export class EffectConfiguratorComponent implements OnInit {
   handleTargetChangeFromEvent(type: string, event: Event) {
     const input = (event.target as HTMLInputElement).value;
     this.handleTargetChange(type, input);
+  }
+
+  updatePool() {
+    this.localEffect.pool = this.poolString.split(',').map((s) => s.trim());
+    this.onChange.emit(this.localEffect);
+  }
+
+  updateCardIds() {
+    this.localEffect.cardIds = this.cardIdsString
+      .split(',')
+      .map((s) => s.trim());
+    this.onChange.emit(this.localEffect);
+  }
+
+  updateFilterFromJson() {
+    try {
+      this.localEffect.filter = JSON.parse(this.filterJson);
+      this.onChange.emit(this.localEffect);
+    } catch (err) {
+      alert('❌ JSON del filtro non valido');
+    }
   }
 }

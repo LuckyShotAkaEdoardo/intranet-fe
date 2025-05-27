@@ -147,19 +147,20 @@ export const EFFECT_METADATA = [
   {
     type: 'SUMMON',
     label: 'Evoca',
-    fields: ['value', 'subtype'],
-    description: 'Evoca creature casuali sul campo',
+    fields: ['value', 'subtype', 'target', 'cardIds', 'pool', 'filter'],
+    description:
+      'Evoca carte specifiche, da pool o filtrate per costo/statistiche',
   },
   {
     type: 'COPY_CARD',
     label: 'Copia Carta',
-    fields: ['target'],
+    fields: ['target', 'count'],
     description: 'Copia una carta nemica nella propria mano',
   },
   {
     type: 'STEAL_CARD',
     label: 'Ruba Carta',
-    fields: [],
+    fields: ['target', 'count'],
     description: 'Ruba la prima carta della mano nemica',
   },
   {
