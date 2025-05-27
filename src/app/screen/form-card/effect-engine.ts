@@ -196,6 +196,8 @@ export class EffectConfiguratorComponent implements OnInit {
     ALL_CARDS: 'ALL_CARDS',
     CHOOSE_ENEMY: 'CHOOSE_ENEMY',
     CHOOSE_ALLY: 'CHOOSE_ALLY',
+    CHOOSE_ENEMY_OR_FACE: 'CHOOSE_ENEMY_OR_FACE',
+    CHOOSE_ALLY_OR_FACE: 'CHOOSE_ALLY_OR_FACE',
     CHOOSE_ANY: 'CHOOSE_ANY',
   };
 
