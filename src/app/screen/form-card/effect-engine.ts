@@ -209,7 +209,7 @@ export class EffectConfiguratorComponent implements OnInit {
 
   ngOnInit() {
     this.localEffect = { ...this.effect };
-    this.localEffect.mode = this.localEffect.mode || 'random';
+    this.localEffect.mode = this.localEffect.mode || '';
     this.poolString = (this.localEffect.pool || []).join(', ');
     this.cardIdsString = (this.localEffect.cardIds || []).join(', ');
     this.filterJson = this.localEffect.filter
